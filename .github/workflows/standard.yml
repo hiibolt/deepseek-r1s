@@ -1,0 +1,52 @@
+name: nix-docker-build
+
+# Configures this workflow to run every time a change is pushed to the branch called `master`.
+on:
+  push:
+    branches: ['master']
+    
+jobs:
+  build:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the package
+      - uses: actions/checkout@v4
+    
+      # Install Nix and cache its store
+      - uses: nixbuild/nix-quick-install-action@v27
+      - name: Restore and cache Nix store
+        uses: nix-community/cache-nix-action@v5
+        with:
+          # restore and save a cache using this key
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+          # if there's no cache hit, restore a cache by this prefix
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          # collect garbage until Nix store size (in bytes) is at most this number
+          # before trying to save a new cache
+          gc-max-store-size-linux: 1073741824
+          # do purge caches
+          purge: true
+          # purge all versions of the cache
+          purge-prefixes: cache-${{ runner.os }}-
+          # created more than this number of seconds ago relative to the start of the `Post Restore` phase
+          purge-created: 0
+          # except the version with the `primary-key`, if it exists
+          purge-primary-key: never
+        
+      # Install Skopeo
+      - name: 'Set up skopeo'
+        run: nix profile install nixpkgs#skopeo
+      
+      # Log in to the GitHub Container Registry
+      - name: Log in to the GitHub Container Registry
+        run: skopeo login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ghcr.io
+
+      # Build the package defined in the Nix Flake 
+      - name: Build the derviation defined in the Nix Flake
+        run: nix build .#docker
+
+      # Push the built image to the GitHub Container Registry
+      - name: Push the built image to the GitHub Container Registry
+        run: |
+          skopeo --insecure-policy copy docker-archive:result docker://ghcr.io/${{ github.actor }}/${{ github.repository }}:latest

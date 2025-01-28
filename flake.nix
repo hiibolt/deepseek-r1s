@@ -60,6 +60,44 @@
       {
         packages = rec {
           ${name} = localRustBuild;
+
+          docker = let
+            bin = "${self.packages.${system}.${name}}/bin/${name}";
+            app = pkgs.lib.fileset.toSource {
+              root = ./.;
+              fileset = ./public;
+            };
+          in
+            pkgs.dockerTools.buildLayeredImage {
+              inherit name;
+              tag = "latest";
+
+              contents = with pkgs.dockerTools; [
+                usrBinEnv
+                binSh
+                caCertificates
+                fakeNss
+              ] ++ (with pkgs; [
+                openssl.dev
+                openssh
+                curl
+                sqlite
+                gnused
+                gnugrep
+                coreutils
+                ollama
+              ]) ++ [
+                app
+              ];
+
+              config = {
+                Entrypoint = [ bin ];
+                Volumes = {
+                  "/data" = { };
+                };
+                ExposedPorts."5777/tcp" = { };
+              };
+            };
         };
     });
 }

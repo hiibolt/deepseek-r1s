@@ -1,0 +1,12 @@
+services:
+  deepseek-r1:
+    image: ghcr.io/hiibolt/deepseek-r1:latest
+    ports:
+      - "5776:5776"
+    volumes:
+      - 'data:/data'
+    environment:
+      - MODEL_NAME=deepseek-r1:1.5b
+      - DATA_DIR_PATH=/data
+volumes:
+  data:
