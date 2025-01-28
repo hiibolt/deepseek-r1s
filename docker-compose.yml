@@ -1,6 +1,6 @@
 services:
   deepseek-r1:
-    image: ghcr.io/hiibolt/deepseek-r1:latest
+    image: ghcr.io/hiibolt/deepseek-r1s:latest
     ports:
       - "5776:5776"
     volumes:
