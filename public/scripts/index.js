@@ -1,4 +1,4 @@
-const ws = new WebSocket('ws://localhost:5776/ws');
+const ws = new WebSocket(baseURL);
 const chatContainer = document.getElementById('chatContainer');
 const messageInput = document.getElementById('messageInput');
 
