@@ -250,7 +250,14 @@ async fn handler(
 async fn start_webserver ( ) -> Result<()> {
     let app = Router::new()
         .route("/ws", any(handler))
-        .route("/", get(|| async { Html(include_str!("../public/pages/index.html")) }))
+        .route("/", get(|| async { 
+            let base_url = std::env::var("DIFF_BASE_URL")
+                .unwrap_or("ws://localhost:5776/ws".to_string());
+            let body = include_str!("../public/pages/index.html")
+                .replace("<REPLACE_ME>", &base_url);
+                
+            Html(body)
+        }))
         .nest_service("/public", ServeDir::new("public"));
     
     let port = std::env::var("PORT").unwrap_or("5776".to_string());
