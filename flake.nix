@@ -63,14 +63,10 @@
 
           docker = let
             bin = "${self.packages.${system}.${name}}/bin/${name}";
-            app = pkgs.lib.fileset.toSource {
-              root = ./.;
-              fileset = (pkgs.lib.fileset.unions [
-                ./public/pages/index.html
-                ./public/scripts/index.js
-                ./public/styles/styles.css
-              ]);
-            };
+            publicDir = pkgs.runCommand "public" {} ''
+              mkdir -p $out/public
+              cp -r ${./public}/* $out/public
+            '';
           in
             pkgs.dockerTools.buildLayeredImage {
               inherit name;
@@ -91,7 +87,7 @@
                 coreutils
                 ollama
               ]) ++ [
-                app
+                publicDir
               ];
 
               config = {
