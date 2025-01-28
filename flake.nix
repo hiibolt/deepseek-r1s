@@ -65,7 +65,11 @@
             bin = "${self.packages.${system}.${name}}/bin/${name}";
             app = pkgs.lib.fileset.toSource {
               root = ./.;
-              fileset = ./public;
+              fileset = (pkgs.lib.fileset.unions [
+                ./public/pages/index.html
+                ./public/scripts/index.js
+                ./public/styles/styles.css
+              ]);
             };
           in
             pkgs.dockerTools.buildLayeredImage {
