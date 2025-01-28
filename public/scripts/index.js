@@ -9,6 +9,7 @@ let thinking = false;
 ws.onmessage = (event) => {
   const data = JSON.parse(event.data);
   console.dir(data);
+  
 
   switch(data.event) {
     case 'Thinking':
