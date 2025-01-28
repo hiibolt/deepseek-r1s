@@ -1,0 +1,78 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f8ff;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.chat-bubble {
+    max-width: 70%;
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: 20px;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.sent {
+    background-color: #007aff;
+    color: white;
+    align-self: flex-end;
+}
+
+.received {
+    background-color: #e5e5ea;
+    color: black;
+    align-self: flex-start;
+}
+
+.thinking {
+    font-style: italic;
+    color: gray;
+    align-self: flex-start;
+}
+
+.input-container {
+    display: flex;
+    padding: 10px;
+    background-color: white;
+    border-top: 1px solid #ccc;
+}
+
+.input-container input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    outline: none;
+}
+
+.input-container button {
+    margin-left: 10px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 20px;
+    background-color: #007aff;
+    color: white;
+    cursor: pointer;
+}
+
+.input-container button:hover {
+    background-color: #005bb5;
+}
+
+.collapsible {
+    cursor: pointer;       /* Show a pointer to indicate it's clickable */
+    opacity: 0.8;         /* Slightly dim, so it stands out from normal text */
+  }
+  

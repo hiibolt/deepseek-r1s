@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Chat + Markdown + LaTeX + Collapsible Thinking</title>
+
+  <!-- Your existing CSS file -->
+  <link rel="stylesheet" href="/public/styles/styles.css">
+
+  <!-- Marked for Markdown parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- DOMPurify for sanitizing HTML (optional, but recommended) -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+
+  <!-- MathJax Config -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [ ['$', '$'], ["\\(", "\\)"] ],
+        displayMath: [ ['$$', '$$'], ["\\[", "\\]"] ]
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+
+  <!-- Load MathJax -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+  <div class="chat-container" id="chatContainer"></div>
+
+  <div class="input-container">
+    <input type="text" id="messageInput" placeholder="Type a message... (supports *markdown* and $LaTeX$)">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <!-- Your updated JS -->
+  <script src="/public/scripts/index.js"></script>
+</body>
+</html>
