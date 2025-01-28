@@ -1,9 +1,9 @@
-use std::{sync::Arc, time::{SystemTime, UNIX_EPOCH}};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-use axum::{extract::{ws::{Message, WebSocket}, State, WebSocketUpgrade}, response::{Html, Response}, routing::{any, get}, Router};
+use axum::{extract::{ws::{Message, WebSocket}, WebSocketUpgrade}, response::{Html, Response}, routing::{any, get}, Router};
 use ollama_rs::{generation::completion::request::GenerationRequest, Ollama};
 use anyhow::{Result, Context, anyhow};
-use tokio::{process::{Child, ChildStderr, ChildStdout, Command}, sync::Mutex};
+use tokio::process::{Child, ChildStderr, ChildStdout, Command};
 use tracing::{error, info, warn};
 use tracing_subscriber;
 use tokio_stream::StreamExt;
@@ -96,17 +96,12 @@ async fn write_logs (
     Ok(())
 }
 
-#[derive(Debug)]
-struct AppState {
-    ollama_server: OllamaServer,
-}
 
 #[tracing::instrument]
 async fn handle_socket_helper (
-    app: Arc<Mutex<AppState>>,
     socket: WebSocket
 ) -> () {
-    if let Err(e) = handle_socket(app, socket).await {
+    if let Err(e) = handle_socket(socket).await {
         error!("Failed to handle socket! Error: {e:?}");
     }
 }
@@ -126,7 +121,6 @@ enum Event {
 }
 #[tracing::instrument]
 async fn handle_socket (
-    app: Arc<Mutex<AppState>>,
     mut socket: WebSocket
 ) -> Result<()> {
     let ollama = Ollama::default();
@@ -247,21 +241,17 @@ async fn handle_socket (
 }
 
 async fn handler(
-    State(app): State<Arc<Mutex<AppState>>>,
     ws: WebSocketUpgrade
 ) -> Response {
-    ws.on_upgrade(move |socket| handle_socket_helper(app, socket))
+    ws.on_upgrade(move |socket| handle_socket_helper(socket))
 }
 
 #[tracing::instrument]
-async fn start_webserver (
-    state: Arc<Mutex<AppState>>
-) -> Result<()> {
+async fn start_webserver ( ) -> Result<()> {
     let app = Router::new()
         .route("/ws", any(handler))
         .route("/", get(|| async { Html(include_str!("../public/pages/index.html")) }))
-        .nest_service("/public", ServeDir::new("public"))
-        .with_state(state);
+        .nest_service("/public", ServeDir::new("public"));
     
     let port = std::env::var("PORT").unwrap_or("5776".to_string());
     eprintln!("[ Starting deepseek-r1s on {port}... ]");
@@ -279,18 +269,27 @@ async fn main() -> Result<()> {
     // Build the tracing subscriber
     tracing_subscriber::fmt::init();
 
-    info!("Ensuring file structure...");
-    build_file_structure().await
-        .context("Failed to build file structure!")?;
+    let spawn_ollama = std::env::var("SPAWN_OLLAMA")
+        .unwrap_or("true".to_string())
+        .parse::<bool>()
+        .context("Failed to parse 'SPAWN_OLLAMA' environment variable!")?;
 
-    info!("Starting Ollama serve...");
-    let state = Arc::new(Mutex::new(AppState {
-        ollama_server: start_ollama_serve()
-            .context("Failed to start Ollama serve!")?
-    }));
+    let ollama_server = if spawn_ollama {
+        info!("Ensuring file structure...");
+        build_file_structure().await
+            .context("Failed to build file structure!")?;
+
+        info!("Starting Ollama serve...");
+        Some(start_ollama_serve()
+                .context("Failed to start Ollama serve!")?
+        )
+    } else { 
+        info!("Skipping Ollama serve...");
+        None
+    };
     
     // Start the webserver
-    let webserver = tokio::spawn(start_webserver(state.clone()));
+    let webserver = tokio::spawn(start_webserver());
 
 
     // Await stdin to kill the server
@@ -306,18 +305,18 @@ async fn main() -> Result<()> {
     info!("Shutting down server...");
     webserver.abort();
 
-    info!("Preparing to write logs...");
-    write_logs(&mut state.lock().await.ollama_server).await
-        .context("Failed to write logs!")?;
+    if let Some(mut ollama_server) = ollama_server {
+        info!("Preparing to write logs...");
+        write_logs(&mut ollama_server).await
+            .context("Failed to write logs!")?;
 
-    info!("Killing Ollama server...");
-    state.lock()
-        .await
-        .ollama_server
-        .child
-        .kill()
-        .await
-        .context("Failed to kill Ollama server!")?;
+        info!("Killing Ollama server...");
+        ollama_server
+            .child
+            .kill()
+            .await
+            .context("Failed to kill Ollama server!")?;
+    }
 
     Ok(())
 }
